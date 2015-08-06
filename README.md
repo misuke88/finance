@@ -5,11 +5,15 @@
 	- term을 바탕으로 sentiment (domain: finance) dictionary를 만들기
 
 ## Requirments
+
 - python 2.7+
 - lee2014: http://nlp.stanford.edu/pubs/stock-event.html
 
+## Configuration
 
-## Run
+    cp settings.py.sample settings.py
 
 ## Author
+
 - [Misuk Kim](http://github.com/misuke88)
+- [Lucy Park](http://github.com/misuke88)

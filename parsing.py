@@ -5,7 +5,7 @@ import re
 from gensim import corpora, models, similarities
 from nltk.corpus import stopwords
 
-from settings import TARGETPATH
+from settings import DATA_DIR, 8K_DIR
 from utils import checkdir, file_read, get_today, get_version
 
 
@@ -22,7 +22,7 @@ def get_id_docs_from_gz(company_code):
         return (id_, doc)
 
 
-    with gzip.open('%s/%s.gz' % (TARGETPATH, company_code)) as f:
+    with gzip.open('%s/%s.gz' % (8K_DIR, company_code)) as f:
         docs = filter(None, f.read().split("<DOCUMENT>"))
 
     return [get_id_doc(d) for d in docs]
@@ -46,8 +46,8 @@ def append_id_docs_to_file(id_docs, filename):
 if __name__ == '__main__':
 
     company_code = 'C'
+    filename = '%s/stock.tsv' % DATA_DIR
 
-    filename = 'stock.tsv'
     open(filename, 'w').close()     # clear file
     id_docs = get_id_docs_from_gz(company_code)
     append_id_docs_to_file(id_docs, filename)
