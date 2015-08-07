@@ -2,5 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # fill me
-8K_DIR = '.'
+DIR_8K  = 'F:/finance/8K.tar/8K-gz'
 DATA_DIR = './data'
+DIR_PRICE = '.'
