@@ -60,7 +60,6 @@ def append_id_docs_to_file(id_docs_price, filename):
     with open(filename, 'a') as f:
         for i in id_docs_price:
             id_, doc, price = i[0], parse_doc(i[1]), i[2]
-            # f.write('%s\t%.4f\t%s\n' % (id_,float(price), doc))
             f.write('%s\t%s\t%.4f\n' % (id_, doc, float(price)))
 
 
