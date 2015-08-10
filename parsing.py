@@ -65,11 +65,16 @@ def append_id_docs_to_file(id_docs_price, filename):
 
 if __name__ == '__main__':
 
-    company_code = 'C'
+    company_codes = 'C WFC GS JPM BAC'.split()
     filename = '%s/stock.tsv' % DATA_DIR
     error_filename = '%s/errorfilename.txt' %DATA_DIR
+    num_total_doc = 0
     open(error_filename, 'w').close()
     open(filename, 'w').close()     # clear file
-    id_docs_price = get_id_docs_from_gz(company_code, error_filename)
-    append_id_docs_to_file(id_docs_price, filename)
-    print('%s\t%s' % (company_code, len(id_docs_price)))
+    for company_code in company_codes:
+        id_docs_price = get_id_docs_from_gz(company_code, error_filename)
+        append_id_docs_to_file(id_docs_price, filename)
+        print('%s\t%s' % (company_code, len(id_docs_price)))
+        num_total_doc = num_total_doc + len(id_docs_price)
+
+    print('total\t%s' % len(num_total_doc))
