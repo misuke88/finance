@@ -77,4 +77,4 @@ if __name__ == '__main__':
         print('%s\t%s' % (company_code, len(id_docs_price)))
         num_total_doc = num_total_doc + len(id_docs_price)
 
-    print('total\t%s' % len(num_total_doc))
+    print('total\t%d' % num_total_doc)
