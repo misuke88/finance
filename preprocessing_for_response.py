@@ -1,66 +1,85 @@
 import csv
+import pandas as pd 
+import numpy as np
 
 from settings import DATA_DIR
+from pandas import DataFrame
 
 
-def openfiles(filename, error_filename_ratio):
-	doc_list = []
-	price_list = []
-	id_list =[]
-	''' make list with all contents'''
-	with open(filename, 'rb') as f:
-		docs = f.readlines()
-	open(filename).close()	
-	for doc in docs:
-		doc = doc.split('\t')
-		id_list.append(doc[0])
-		doc_list.append(doc[1])
-		price_list.append(float(doc[2]))
-	id_list, doc_list, responses = change_price_against_previous_day(id_list,doc_list, price_list, error_filename_ratio)
-	return id_list, doc_list, responses
+TOTAL_INDEX = 'djia gspc ixic vix'.split() # dow jones. snp500, nasdaq, vol
 
-def change_price_against_previous_day(ids,docs, prices, error_filename_ratio):
-	# print prices[1], len(prices)
-	change_price = []
+def openfiles(filename):
+
+	data = pd.read_csv(filename, sep='\t', header =None)
+	data.columns = ['id', 'text', 'closePrice', 'djia', 'gspc', 'ixic', 'vix']
+	return data 
+
+
+def split_X_Y_dataset(data, error_filename_ratio):
+	
+	columns = 'text'
+	ids  = data['id']
+	dataX = pd.DataFrame(index =ids[range(len(ids))])
+	dataX['text'] = np.asarray(data['text'])
+	dataX = dataX.drop(dataX.index[len(dataX)-1])
+	dataY = change_price_against_previous_day(data, error_filename_ratio)
+
+	return dataX, dataY
+
+
+def change_price_against_previous_day(data, error_filename_ratio):
+
+	columns = TOTAL_INDEX
 	idxs =[]
 	error = 0
 	criteria = 0.01
-	for i in range(len(prices)-1):
-		if prices[i+1] == 0: # the price of previous day = null  then logging error
-			with open(error_filename_ratio, 'a') as ef: # log that document
-				ef.write('%s\n' % ids[i+1])			
-			change_price.append('ERROR')
-			idxs.append(i)
-			error += 1
-		else: 
-			ratio = (prices[i+1]-prices[i])/prices[i+1]
-			if ratio >= criteria:
-				change_price.append('UP')
-			elif ratio <= -criteria:
-				change_price.append('DOWN')
-			else:
-				change_price.append('STAY')
-	idxs = sorted(idxs, reverse=True)
-	for i in range(len(idxs)):
-		del change_price[idxs[i]], ids[idxs[i]], docs[idxs[i]]
-	del docs[-1] # adjust the number of rows same as responses
-	del ids[-1]
-	print 'The %d days have null prices.' % error
-	return ids, docs, change_price
+	prices = data['closePrice'] 
+	ids = data['id']
+	change_price = pd.DataFrame(index =ids[range(len(ids)-1)], columns=columns)
 
-def append_id_docs_ratio_to_file(ids, docs, responses, filename):
-    with open(filename, 'a') as f:
-        for i in range(len(responses)):
-            f.write('%s\t%s\t%s\n' % (ids[i], docs[i], responses[i]))
+	for INDEX in range(len(TOTAL_INDEX)-1):
+		tmp_change =[]
+		total = data[TOTAL_INDEX[INDEX]]
+		print INDEX
+		for i in range(len(prices)-1):
+			# the price of previous day = null  then logging error
+			if prices[i+1] == 0 or total[i+1] == 0: 
+				with open(error_filename_ratio, 'a') as ef: # log that document
+					ef.write('%s\t%s\n' % (TOTAL_INDEX[INDEX], ids[i+1]))			
+				tmp_change.append('ERROR')
+				error += 1
+			else: 
+				ratio = (prices[i+1]-prices[i])/prices[i+1]
+				total_ratio = (total[i+1]-total[i])/total[i+1]
+				if ratio-total_ratio >= criteria:
+					tmp_change.append('UP')
+				elif ratio-total_ratio <= -criteria:
+					tmp_change.append('DOWN')
+				else:
+					tmp_change.append('STAY')
+		change_price[TOTAL_INDEX[INDEX]] = np.asarray(tmp_change)
+	change_price[TOTAL_INDEX[INDEX+1]] = np.asarray(data[TOTAL_INDEX[INDEX+1]][range(len(data)-1)])
+
+	print 'The %d days have null prices.' % error
+	return change_price
+
+
+def write_table(data, filename):
+	data.to_csv(filename, header=True)
+
 
 if __name__ == '__main__':
 
-	filename = '%s/stock.txt' % DATA_DIR
-	filename_ratio = '%s/stock_ratio.txt' % DATA_DIR
+	filename = '%s/stock.tsv' % DATA_DIR
+	filename_X = '%s/stock_X.txt' % DATA_DIR
+	filename_Y = '%s/stock_Y.txt' % DATA_DIR
 	error_filename_ratio = '%s/errorfilename_ratio.txt' % DATA_DIR
-	open(error_filename_ratio, 'w').close()
-	open(filename_ratio, 'w').close()
-	ids, docs, responses = openfiles(filename, error_filename_ratio)
-	append_id_docs_ratio_to_file(ids, docs, responses, filename_ratio)
 
-	
+	open(error_filename_ratio, 'w').close()
+	open(filename_X, 'w').close()
+	open(filename_Y, 'w').close()
+
+	data = openfiles(filename)
+	dataX, dataY = split_X_Y_dataset(data, error_filename_ratio)
+	write_table(dataX, filename_X)
+	write_table(dataY, filename_Y)
