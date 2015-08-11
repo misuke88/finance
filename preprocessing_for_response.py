@@ -65,7 +65,7 @@ def change_price_against_previous_day(data, error_filename_ratio):
 
 
 def write_table(data, filename):
-	data.to_csv(filename, header=True)
+	data.to_csv(filename, sep='\t', header=True)
 
 
 if __name__ == '__main__':
