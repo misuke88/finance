@@ -13,7 +13,17 @@
 
     cp settings.py.sample settings.py
 
+## Run
+
+1. `parsing.py`: Creates `stock.txt`
+1. `preprocessing_for_response.py`: Creates `stock_{X,y}.txt`
+1. `modeling.py`: Class prediction
+
+or
+
+    make run
+
 ## Author
 
 - [Misuk Kim](http://github.com/misuke88)
-- [Lucy Park](http://github.com/misuke88)
+- [Lucy Park](http://github.com/e9t)
