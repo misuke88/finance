@@ -13,14 +13,16 @@ from sklearn.cross_validation import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 
-from settings import DATA_DIR
-
+from settings import DATA_DIR, LOG_DIR
+import utils
 
 TOTAL_INDEX = 'djia gspc ixic vix'.split() # dow jones. snp500, nasdaq, vol
+EXPID = utils.get_expid()
+utils.set_logger('%s/%s.log' % (LOG_DIR, EXPID), 'DEBUG')
 
 
 def openfiles(filename, arg):
-	
+
 	data = pd.read_csv(filename, sep='\t', header = 0)
 	if arg == 100:
 		value = data['text']
@@ -63,7 +65,7 @@ def generate_RF(X_train, X_test, y_train, y_test):
     rf = RandomForestClassifier(n_estimators=10, min_samples_leaf=3)
     rf.fit(X_train.toarray(), y_train)
     y_pred = rf.predict(X_test.toarray())
-    cm = confusion_matrix(y_test, y_pred) 
+    cm = confusion_matrix(y_test, y_pred)
     return cm, rf.score(X_test.toarray(), y_test)
 
 
@@ -93,4 +95,4 @@ if __name__ == '__main__':
 								 % (lr_accuracy, rf_accuracy)
 
 	print "confusion matrix of logistic regression \n", lr_cm, \
-				"\nconfusion_matrix of random forest\n", rf_cm					
+				"\nconfusion_matrix of random forest\n", rf_cm
