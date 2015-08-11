@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import logging
 import os
+import re
 
 
 get_expid = lambda: datetime.today().isoformat().replace(':', '-')
@@ -28,6 +29,11 @@ def get_version():
     with open('version.cfg', 'r') as f:
         return f.read().strip()
 
+
+def re_sub(text, substitutions):
+    for sub in substitutions:
+        text = re.sub(sub[0], sub[1], text)
+    return text
 
 def set_logger(filename, level='DEBUG'):
     # basic config

@@ -5,6 +5,7 @@ import re
 import time
 
 from settings import DATA_DIR, DIR_8K, DIR_PRICE
+import utils
 
 
 KEYS = 'FILE TIME EVENTS TEXT ITEM'.split()
@@ -27,7 +28,7 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
 
         with open('%s/%s.csv' % (DIR_PRICE, company_code)) as csvfile:
             historys = list(csv.reader(csvfile, delimiter= ','))
-        
+
         datestring = id_.split('-')[2][0:8]
         date = time.strptime(datestring, '%Y%m%d')
         date = time.strftime('%Y-%m-%d', date)
@@ -45,7 +46,7 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
 
         with open('%s/%s.csv' % (DIR_PRICE, use_index)) as csvfile:
             historys = list(csv.reader(csvfile, delimiter= ','))
-        
+
         datestring = id_.split('-')[2][0:8]
         date = time.strptime(datestring, '%Y%m%d')
         date = time.strftime('%Y-%m-%d', date)
@@ -67,10 +68,18 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
 
 def parse_doc(doc):
     # TODO: remove special characters
-    doc = doc.lower()
-    doc = doc.replace('\t', ' ').replace('\n', ' ')
-    doc = re.sub('\s+', ' ', doc)
-    return doc
+    # TODO: remove stopwords?
+
+    SUBSTITUTIONS = [
+        ('\.?\d+(,\d+)*(\.\d+)?', ' NUM '),                 # numbers
+        (r'(\W)\1{3,}', r'\1\1\1'),                         # repetitive symbols
+    ]
+
+    lowercase = doc.lower()
+    flattened  = lowercase.replace('\t', ' ').replace('\n', ' ')
+    converted = utils.re_sub(flattened, SUBSTITUTIONS)  # replace special tokens
+
+    return converted
 
 
 def append_id_docs_to_file(id_docs_price, filename):
@@ -91,7 +100,7 @@ if __name__ == '__main__':
     num_total_doc = 0
     open(error_filename, 'w').close()
     open(filename, 'w').close()     # clear file
-    open(error_filename_total_index, 'w').close()    
+    open(error_filename_total_index, 'w').close()
     for company_code in company_codes:
         id_docs_price = get_id_docs_from_gz(company_code, error_filename, error_filename_total_index)
         append_id_docs_to_file(id_docs_price, filename)
