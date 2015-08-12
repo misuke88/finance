@@ -1,3 +1,6 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 import csv
 import logging
 
@@ -25,6 +28,8 @@ utils.set_logger('%s/%s.log' % (LOG_DIR, EXPID), 'DEBUG')
 def openfiles(filename, arg):
 
     data = pd.read_csv(filename, sep='\t', header = 0)
+    data = data.where((pd.notnull(data)), '')   # Replace np.nan with ''
+
     if arg == 100:
         value = data['text']
     else:
@@ -83,6 +88,7 @@ def cross_validation_10(X, y):
     lr_scores = cross_val_score(linear_model.LogisticRegression(), X, y, scoring ='accuracy', cv = 10 )
     rf_scores = cross_val_score(RandomForestClassifier(), X.toarray(), y, scoring ='accuracy', cv = 10 )
     logging.info("CV: Accuracy of Logistic Regression is %.2f\n, and Accuracy of Random Forest is %.2f\n." % (lr_scores.mean, rf_scores.mean))
+
 
 if __name__ == '__main__':
 
