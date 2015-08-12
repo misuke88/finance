@@ -4,6 +4,8 @@ import gzip
 import re
 import time
 
+import nltk
+
 from settings import DATA_DIR, DIR_8K, DIR_PRICE
 import utils
 
@@ -76,10 +78,10 @@ def parse_doc(doc):
     ]
 
     lowercase = doc.lower()
-    flattened  = lowercase.replace('\t', ' ').replace('\n', ' ')
+    flattened = lowercase.replace('\t', ' ').replace('\n', ' ')
     converted = utils.re_sub(flattened, SUBSTITUTIONS)  # replace special tokens
 
-    return converted
+    return ' '.join(nltk.tokenize.wordpunct_tokenize(converted))
 
 
 def append_id_docs_to_file(id_docs_price, filename):
