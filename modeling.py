@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from pandas import DataFrame
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.cross_validation import train_test_split
 from sklearn import linear_model, datasets
 from sklearn import metrics
@@ -42,9 +42,15 @@ def preprocessing(docs, y, arg):
     return list(docs), list(y)
 
 
-def tokenizing(docs):
+def tokenizing(docs, mode=None, min_df=5):
 
-    vectorizer = CountVectorizer(lowercase = False,  min_df = 5)
+    if mode=='tf':
+        vectorizer = CountVectorizer(min_df=min_df)
+    elif mode=='tfidf':
+        vectorizer = TfidfVectorizer(min_df=min_df)
+    else:
+        raise Exception('Invalid mode %s' % mode)
+    logging.info(vectorizer)
     matrix_td = vectorizer.fit_transform(docs) # term doc matrix
     return matrix_td
 
@@ -52,6 +58,7 @@ def tokenizing(docs):
 def generate_LR(X_train, X_test, y_train, y_test):
 
     logreg = linear_model.LogisticRegression(C=1e5)
+    logging.info(logreg)
     model = logreg.fit(X_train, y_train)
     predicted = model.predict(X_test)
     probs = model.predict_proba(X_test)
@@ -64,6 +71,7 @@ def generate_LR(X_train, X_test, y_train, y_test):
 def generate_RF(X_train, X_test, y_train, y_test):
 
     rf = RandomForestClassifier(n_estimators=10, min_samples_leaf=3)
+    logging.info(rf)
     rf.fit(X_train.toarray(), y_train)
     y_pred = rf.predict(X_test.toarray())
     cm = confusion_matrix(y_test, y_pred)
@@ -80,10 +88,11 @@ if __name__ == '__main__':
 
     filenameX = '%s/stock_X.txt' % DATA_DIR
     filenameY = '%s/stock_Y.txt' % DATA_DIR
-    docs= openfiles(filenameX, 100)
+    docs = openfiles(filenameX, 100)
     y = openfiles(filenameY, 1) # arg = 1: SNP500
     docs, y = preprocessing(docs, y, arg=1)
-    X = tokenizing(docs) # term doc matrix
+    X = tokenizing(docs, mode='tfidf') # term doc matrix
+    logging.info(X.shape)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
     logging.info("Modeling of logistic regression...")
     lr_cm, lr_accuracy = generate_LR(X_train, X_test, y_train, y_test) #logistic regression
