@@ -65,12 +65,14 @@ def generate_LR(X_train, X_test, y_train, y_test):
     logreg = linear_model.LogisticRegression(C=1e5)
     logging.info(logreg)
     model = logreg.fit(X_train, y_train)
-    predicted = model.predict(X_test)
+    train_predicted = model.predict(X_train)
+    test_predicted = model.predict(X_test)
     probs = model.predict_proba(X_test)
-    accuracy = metrics.accuracy_score(y_test, predicted)
-    cm = metrics.confusion_matrix(y_test, predicted)
-    report = metrics.classification_report(y_test, predicted)
-    return cm, accuracy
+    train_accuracy = metrics.accuracy_score(y_train, train_predicted)
+    test_accuracy = metrics.accuracy_score(y_test, test_predicted)
+    cm = metrics.confusion_matrix(y_test, test_predicted)
+    report = metrics.classification_report(y_test, test_predicted)
+    return cm, train_accuracy, test_accuracy
 
 
 def generate_RF(X_train, X_test, y_train, y_test):
@@ -80,8 +82,7 @@ def generate_RF(X_train, X_test, y_train, y_test):
     rf.fit(X_train.toarray(), y_train)
     y_pred = rf.predict(X_test.toarray())
     cm = confusion_matrix(y_test, y_pred)
-    return cm, rf.score(X_test.toarray(), y_test)
-
+    return cm, rf.score(X_train.toarray(), y_train), rf.score(X_test.toarray(), y_test)
 
 def cross_validation_10(X, y):
 
@@ -101,12 +102,13 @@ if __name__ == '__main__':
     logging.info(X.shape)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
     logging.info("Modeling of logistic regression...")
-    lr_cm, lr_accuracy = generate_LR(X_train, X_test, y_train, y_test) #logistic regression
+    lr_cm, lr_train_accuracy, lr_test_accuracy = generate_LR(X_train, X_test, y_train, y_test) #logistic regression
     logging.info("Modeling of random forest...")
-    rf_cm, rf_accuracy = generate_RF(X_train, X_test, y_train, y_test) # #random forest
+    rf_cm, rf_train_accuracy, rf_test_accuracy = generate_RF(X_train, X_test, y_train, y_test) # #random forest
 
     # print lr_accuracy, rf_accuracy, lr_cm, rf_cm
-    logging.info("Accuracy of Logistic Regression is %.2f" % lr_accuracy)
+    logging.info("Accuracy of Logistic Regression\n train: %.2f, test: %.2f\n" % (lr_train_accuracy, lr_test_accuracy))
     logging.info('\n%s' % str(lr_cm))
-    logging.info("Accuracy of Random Forest is %.2f." % rf_accuracy)
+
+    logging.info("Accuracy of Random Forest: train\n %.2f, test: %.2f\n" % (rf_train_accuracy, rf_test_accuracy))
     logging.info('\n%s' % str(rf_cm))
