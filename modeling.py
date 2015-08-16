@@ -51,12 +51,12 @@ def preprocessing(docs, y, arg):
     return X, y
 
 
-def tokenizing(docs, mode=None, min_df=0.1):
+def tokenizing(docs, mode=None, min_df=0.2):
 
     if mode=='tf':
         vectorizer = CountVectorizer(min_df = min_df, max_features = 50, stop_words = stopwords.words('english'))
     elif mode=='tfidf':
-        vectorizer = TfidfVectorizer(min_df = min_df, max_features = 50, stop_words = stopwords.words('english'))
+        vectorizer = TfidfVectorizer(min_df = min_df,  max_features = 50, stop_words = stopwords.words('english'))
     else:
         raise Exception('Invalid mode %s' % mode)
     logging.info(vectorizer)
@@ -97,7 +97,7 @@ def cross_validation_10(X, y):
 
     lr_scores = cross_val_score(linear_model.LogisticRegression(), X, y, scoring ='accuracy', cv = 10 )
     rf_scores = cross_val_score(RandomForestClassifier(), X.toarray(), y, scoring ='accuracy', cv = 10 )
-    logging.info("CV: Accuracy of Logistic Regression is %.2f\n, and Accuracy of Random Forest is %.2f\n." % (lr_scores.mean, rf_scores.mean))
+    logging.info("CV: Accuracy of Logistic Regression is %.4f\n, and Accuracy of Random Forest is %.4f\n." % (lr_scores.mean, rf_scores.mean))
 
 
 if __name__ == '__main__':
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     numX = X.ix[:,1:6].copy()
     numX.index = ids
 
-    docs = tokenizing(list(X['text']), mode='tfidf') # term doc matrix
+    docs = tokenizing(list(X['text']), mode='tf') # term doc matrix
     logging.info(docs.shape)
     docX = pd.SparseDataFrame([pd.SparseSeries(docs[i].toarray().ravel()) for i in np.arange(docs.shape[0])],\
     			index =ids).sort_index()
@@ -128,8 +128,8 @@ if __name__ == '__main__':
     rf_cm, rf_train_accuracy, rf_test_accuracy = generate_RF(X_train, X_test, y_train, y_test) # #random forest
 
     # print lr_accuracy, rf_accuracy, lr_cm, rf_cm
-    logging.info("Accuracy of Logistic Regression\n train: %.2f, test: %.2f\n" % (lr_train_accuracy, lr_test_accuracy))
+    logging.info("Accuracy of Logistic Regression\n train: %.4f, test: %.4f\n" % (lr_train_accuracy, lr_test_accuracy))
     logging.info('\n%s' % str(lr_cm))
 
-    logging.info("Accuracy of Random Forest\n  train: %.2f, test: %.2f\n" % (rf_train_accuracy, rf_test_accuracy))
+    logging.info("Accuracy of Random Forest\n  train: %.4f, test: %.4f\n" % (rf_train_accuracy, rf_test_accuracy))
     logging.info('\n%s' % str(rf_cm))
