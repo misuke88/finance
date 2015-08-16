@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import time
 
 
 get_expid = lambda: datetime.today().isoformat().replace(':', '-')
@@ -24,6 +25,12 @@ def file_read(filename):
         d = f.read().split("<DOCUMENT>")
     return d
 
+def get_datetime(id_):
+    
+    datestring = id_.split('-')[2][0:8]
+    date = time.strptime(datestring, '%Y%m%d')
+    date = time.strftime('%Y-%m-%d', date)
+    return date
 
 def get_version():
     with open('version.cfg', 'r') as f:
