@@ -31,9 +31,7 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
         with open('%s/%s.csv' % (DIR_PRICE, company_code)) as csvfile:
             historys = list(csv.reader(csvfile, delimiter= ','))
 
-        datestring = id_.split('-')[2][0:8]
-        date = time.strptime(datestring, '%Y%m%d')
-        date = time.strftime('%Y-%m-%d', date)
+        date = get_datetime(id_)
         price = 0
         for history in historys:
             if history[0]==date:
@@ -49,8 +47,6 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
         with open('%s/%s.csv' % (DIR_PRICE, use_index)) as csvfile:
             historys = list(csv.reader(csvfile, delimiter= ','))
 
-        datestring = id_.split('-')[2][0:8]
-        date = time.strptime(datestring, '%Y%m%d')
         date = time.strftime('%Y-%m-%d', date)
         price = 0
         for history in historys:
@@ -95,7 +91,7 @@ def append_id_docs_to_file(id_docs_price, filename):
 
 if __name__ == '__main__':
 
-    company_codes = 'C WFC GS JPM BAC'.split()
+    company_codes = 'C WFC GS JPM BAC USB AXP SPG AIG MET'.split()
     filename = '%s/stock.txt' % DATA_DIR
     error_filename = '%s/errorfilename.txt' %DATA_DIR
     error_filename_total_index = '%s/errorfilename_total_index.txt' %DATA_DIR
