@@ -5,9 +5,11 @@ import csv
 import logging
 
 import numpy as np
+
 import matplotlib.pyplot as plt
 import pandas as pd
-from pandas import DataFrame
+
+from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.cross_validation import train_test_split
 from sklearn import linear_model, datasets
@@ -15,6 +17,7 @@ from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
+from pandas import *
 
 from settings import DATA_DIR, LOG_DIR
 import utils
@@ -29,40 +32,42 @@ def openfiles(filename, arg):
 
     data = pd.read_csv(filename, sep='\t', header = 0)
     data = data.where((pd.notnull(data)), '')   # Replace np.nan with ''
-
-    if arg == 100:
-        value = data['text']
-    else:
-        value = data[TOTAL_INDEX[arg]]
-
+    if arg == 100: # X
+    	value = pd.DataFrame(data)
+    	value.index = data['id']
+    else: # y
+    	columns = TOTAL_INDEX[arg]
+    	value = pd.DataFrame(data[TOTAL_INDEX[arg]])
+    	value.index = data['id']
     return value
 
 
 def preprocessing(docs, y, arg):
 
     code = TOTAL_INDEX[arg]
-    idx = y[y != 'ERROR'].index.tolist()
-    docs = docs.loc[idx]
+    idx = y[y[code] != 'ERROR'].index.tolist()
+    X = docs.loc[idx]
     y = y.loc[idx]
-    return list(docs), list(y)
+    return X, y
 
 
-def tokenizing(docs, mode=None, min_df=5):
+def tokenizing(docs, mode=None, min_df=0.1):
 
     if mode=='tf':
-        vectorizer = CountVectorizer(min_df=min_df)
+        vectorizer = CountVectorizer(min_df = min_df, max_features = 50, stop_words = stopwords.words('english'))
     elif mode=='tfidf':
-        vectorizer = TfidfVectorizer(min_df=min_df)
+        vectorizer = TfidfVectorizer(min_df = min_df, max_features = 50, stop_words = stopwords.words('english'))
     else:
         raise Exception('Invalid mode %s' % mode)
     logging.info(vectorizer)
     matrix_td = vectorizer.fit_transform(docs) # term doc matrix
+
     return matrix_td
 
 
 def generate_LR(X_train, X_test, y_train, y_test):
 
-    logreg = linear_model.LogisticRegression(C=1e5)
+    logreg = linear_model.LogisticRegression(C=1e5, class_weight='auto')
     logging.info(logreg)
     model = logreg.fit(X_train, y_train)
     train_predicted = model.predict(X_train)
@@ -77,12 +82,16 @@ def generate_LR(X_train, X_test, y_train, y_test):
 
 def generate_RF(X_train, X_test, y_train, y_test):
 
-    rf = RandomForestClassifier(n_estimators=10, min_samples_leaf=3)
+    rf = RandomForestClassifier(n_estimators=2000, min_samples_leaf=3)
     logging.info(rf)
-    rf.fit(X_train.toarray(), y_train)
-    y_pred = rf.predict(X_test.toarray())
-    cm = confusion_matrix(y_test, y_pred)
-    return cm, rf.score(X_train.toarray(), y_train), rf.score(X_test.toarray(), y_test)
+    rf.fit(X_train, y_train)
+    train_predicted = rf.predict(X_train)
+    test_predicted = rf.predict(X_test)
+
+    train_accuracy = metrics.accuracy_score(y_train, train_predicted)
+    test_accuracy = metrics.accuracy_score(y_test, test_predicted)
+    cm = confusion_matrix(y_test, test_predicted)
+    return cm, train_accuracy, test_accuracy
 
 def cross_validation_10(X, y):
 
@@ -95,10 +104,22 @@ if __name__ == '__main__':
 
     filenameX = '%s/stock_X.txt' % DATA_DIR
     filenameY = '%s/stock_Y.txt' % DATA_DIR
-    docs = openfiles(filenameX, 100)
+
+    X = openfiles(filenameX, 100)
     y = openfiles(filenameY, 1) # arg = 1: SNP500
-    docs, y = preprocessing(docs, y, arg=1)
-    X = tokenizing(docs, mode='tfidf') # term doc matrix
+    X, y = preprocessing(X, y, arg=1)
+    ids = X['id']
+    numX = X.ix[:,1:6].copy()
+    numX.index = ids
+
+    docs = tokenizing(list(X['text']), mode='tfidf') # term doc matrix
+    logging.info(docs.shape)
+    docX = pd.SparseDataFrame([pd.SparseSeries(docs[i].toarray().ravel()) for i in np.arange(docs.shape[0])],\
+    			index =ids).sort_index()
+    X =concat([numX.sort_index(), docX], axis =1)
+    # X = numX.sort_index()
+    y = y.sort_index()
+   
     logging.info(X.shape)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
     logging.info("Modeling of logistic regression...")
@@ -110,5 +131,5 @@ if __name__ == '__main__':
     logging.info("Accuracy of Logistic Regression\n train: %.2f, test: %.2f\n" % (lr_train_accuracy, lr_test_accuracy))
     logging.info('\n%s' % str(lr_cm))
 
-    logging.info("Accuracy of Random Forest: train\n %.2f, test: %.2f\n" % (rf_train_accuracy, rf_test_accuracy))
+    logging.info("Accuracy of Random Forest\n  train: %.2f, test: %.2f\n" % (rf_train_accuracy, rf_test_accuracy))
     logging.info('\n%s' % str(rf_cm))
