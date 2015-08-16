@@ -3,12 +3,15 @@ import csv
 import gzip
 import re
 import time
+import datetime
 
 import nltk
+from dateutil.relativedelta import relativedelta
 
 from settings import DATA_DIR, DIR_8K, DIR_PRICE
 import utils
 
+from utils import checkdir, file_read, re_sub, get_version, get_datetime
 
 KEYS = 'FILE TIME EVENTS TEXT ITEM'.split()
 TOTAL_INDEX = 'djia gspc ixic vix'.split() # dow jones. snp500, nasdaq, vol
@@ -21,33 +24,62 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
         id_ = lines[0].split('/')[-1].split('.')[0]
         doc = ' '.join([line for line in lines\
                 if not (any(line.startswith(k) for k in KEYS) or line=='</DOCUMENT>')])
-        price = get_close_price_from_price_history(company_code, id_, error_filename)
+        price, week_move, month_move, quater_move, year_move = get_close_price_from_price_history(company_code, id_, error_filename)
         for INDEX in range(len(TOTAL_INDEX)):
             total.append(get_close_index_from_total_index(TOTAL_INDEX[INDEX], id_, error_filename_total_index))
-        return (id_, doc, price, total)
+        return (id_, doc, price, week_move, month_move, quater_move, year_move, total)
 
     def get_close_price_from_price_history(company_code, id_, error_filename):
+
+        def make_numeric_input_variable(historys, h,id_, now_price):
+
+            def get_movement(historys, h, id_, now_price, arg, prev):
+                
+                now = get_datetime(id_)
+                for p in range(h, min(h+6+arg*25, len(historys))):
+                    t = historys[p][0]
+                    if t <= prev:
+                        return (float(now_price) - float(historys[p][6]))/float(historys[p][6])
+                return 0
+
+            week_move, month_move, quater_move, year_move =[],[],[],[]
+            now_date = get_datetime(id_)
+            now_date = datetime.datetime.strptime(now_date, '%Y-%m-%d')
+
+            week_move = get_movement(historys, h, id_, now_price,0, \
+                datetime.date.isoformat(now_date - datetime.timedelta(weeks=1)))
+            month_move = get_movement(historys, h, id_, now_price, 1, \
+                datetime.date.isoformat(now_date - relativedelta(months=+1)))
+            quater_move =get_movement(historys, h, id_, now_price, 3, \
+                datetime.date.isoformat(now_date - relativedelta(months=+3)))
+            year_move = get_movement(historys, h, id_, now_price, 12, \
+                datetime.date.isoformat(now_date - relativedelta(years=+1)))
+
+            return week_move, month_move, quater_move, year_move
 
         with open('%s/%s.csv' % (DIR_PRICE, company_code)) as csvfile:
             historys = list(csv.reader(csvfile, delimiter= ','))
 
         date = get_datetime(id_)
         price = 0
-        for history in historys:
-            if history[0]==date:
-                price = history[6]
+        for h in range(len(historys)):
+            if historys[h][0]==date:
+                price = historys[h][6]
+                week_move, month_move, quater_move, year_move = make_numeric_input_variable(historys,h, id_, price)
+        
         if price == 0:
-            price = '0'
+            price, week_move, month_move, quater_move, year_move = '0', 0,0,0,0
             with open(error_filename, 'a') as ef:
                 ef.write('%s\n' % id_)
-        return price
+
+        return price, week_move, month_move, quater_move, year_move
 
     def get_close_index_from_total_index(use_index, id_, error_filename_total_index):
 
         with open('%s/%s.csv' % (DIR_PRICE, use_index)) as csvfile:
             historys = list(csv.reader(csvfile, delimiter= ','))
 
-        date = time.strftime('%Y-%m-%d', date)
+        date = get_datetime(id_)
         price = 0
         for history in historys:
             if history[0]==date:
@@ -82,12 +114,14 @@ def parse_doc(doc):
 
 def append_id_docs_to_file(id_docs_price, filename):
     with open(filename, 'a') as f:
+        print id_docs_price[1]
         for i in id_docs_price:
             id_, doc, price = i[0], parse_doc(i[1]), i[2]
-            dow, snp, nas, vol = i[3][0], i[3][1], i[3][2], i[3][3]
-            f.write('%s\t%s\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n' % \
-                    (id_, doc, float(price), float(dow), float(snp), float(nas), float(vol)))
-
+            week, month, quater, year = i[3], i[4], i[5], i[6]
+            dow, snp, nas, vol = i[7][0], i[7][1], i[7][2], i[7][3]
+            f.write('%s\t%s\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n' % \
+                    (id_, doc, float(price), week, month, quater, year,\
+                     float(dow), float(snp), float(nas), float(vol)))
 
 if __name__ == '__main__':
 
