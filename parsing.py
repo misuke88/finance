@@ -114,7 +114,6 @@ def parse_doc(doc):
 
 def append_id_docs_to_file(id_docs_price, filename):
     with open(filename, 'a') as f:
-        print id_docs_price[1]
         for i in id_docs_price:
             id_, doc, price = i[0], parse_doc(i[1]), i[2]
             week, month, quater, year = i[3], i[4], i[5], i[6]
@@ -125,7 +124,8 @@ def append_id_docs_to_file(id_docs_price, filename):
 
 if __name__ == '__main__':
 
-    company_codes = 'C WFC GS JPM BAC USB AXP SPG AIG MET'.split()
+    # company_codes = 'C WFC GS JPM BAC USB AXP SPG AIG MET'.split()
+    company_codes = 'C WFC GS JPM BAC'.split()
     filename = '%s/stock.txt' % DATA_DIR
     error_filename = '%s/errorfilename.txt' %DATA_DIR
     error_filename_total_index = '%s/errorfilename_total_index.txt' %DATA_DIR
