@@ -1,10 +1,13 @@
 import csv
 import pandas as pd
 import numpy as np
+import datetime
 
+from dateutil.relativedelta import relativedelta
 from settings import DATA_DIR
 from pandas import DataFrame
 
+from utils import checkdir, file_read, re_sub, get_version, get_datetime
 
 TOTAL_INDEX = 'djia gspc ixic vix'.split() # dow jones. snp500, nasdaq, vol
 
@@ -12,16 +15,22 @@ TOTAL_INDEX = 'djia gspc ixic vix'.split() # dow jones. snp500, nasdaq, vol
 def openfiles(filename):
 
     data = pd.read_csv(filename, sep='\t', header =None)
-    data.columns = ['id', 'text', 'closePrice', 'djia', 'gspc', 'ixic', 'vix']
+    data.columns = ['id', 'text', 'closePrice', 'week', 'month', 'quater', 'year','djia', 'gspc', 'ixic', 'vix']
     return data
 
 
 def split_X_Y_dataset(data, error_filename_ratio):
 
-    columns = 'text'
+    columns = ['week', 'month', 'quater', 'year', 'vix','text']
     ids  = data['id']
-    dataX = pd.DataFrame(index =ids[range(len(ids))])
+    dataX = pd.DataFrame(index =ids[range(len(ids))], columns = columns)
+    dataX['week'] = np.asarray(data['week'])
+    dataX['month'] = np.asarray(data['month'])
+    dataX['quater'] = np.asarray(data['quater'])
+    dataX['year'] = np.asarray(data['year'])
+    dataX['vix'] = np.asarray(data['vix'])
     dataX['text'] = np.asarray(data['text'])
+
     dataX = dataX.drop(dataX.index[len(dataX)-1])
     dataY = change_price_against_previous_day(data, error_filename_ratio)
 
