@@ -33,12 +33,12 @@ def openfiles(filename, arg):
     data = pd.read_csv(filename, sep='\t', header = 0)
     data = data.where((pd.notnull(data)), '')   # Replace np.nan with ''
     if arg == 100: # X
-    	value = pd.DataFrame(data)
-    	value.index = data['id']
+        value = pd.DataFrame(data)
+        value.index = data['id']
     else: # y
-    	columns = TOTAL_INDEX[arg]
-    	value = pd.DataFrame(data[TOTAL_INDEX[arg]])
-    	value.index = data['id']
+        columns = TOTAL_INDEX[arg]
+        value = pd.DataFrame(data[TOTAL_INDEX[arg]])
+        value.index = data['id']
     return value
 
 
@@ -51,12 +51,12 @@ def preprocessing(docs, y, arg):
     return X, y
 
 
-def tokenizing(docs, mode=None, min_df=0.2):
+def tokenizing(docs, mode=None, min_df=0.005):
 
     if mode=='tf':
-        vectorizer = CountVectorizer(min_df = min_df, max_features = 50, stop_words = stopwords.words('english'))
+        vectorizer = CountVectorizer(min_df = min_df, stop_words = stopwords.words('english'))
     elif mode=='tfidf':
-        vectorizer = TfidfVectorizer(min_df = min_df,  max_features = 50, stop_words = stopwords.words('english'))
+        vectorizer = TfidfVectorizer(min_df = min_df, stop_words = stopwords.words('english'))
     else:
         raise Exception('Invalid mode %s' % mode)
     logging.info(vectorizer)
@@ -82,7 +82,7 @@ def generate_LR(X_train, X_test, y_train, y_test):
 
 def generate_RF(X_train, X_test, y_train, y_test):
 
-    rf = RandomForestClassifier(n_estimators=2000, min_samples_leaf=3)
+    rf = RandomForestClassifier(n_estimators=50, min_samples_leaf=3)
     logging.info(rf)
     rf.fit(X_train, y_train)
     train_predicted = rf.predict(X_train)
@@ -115,21 +115,19 @@ if __name__ == '__main__':
     docs = tokenizing(list(X['text']), mode='tf') # term doc matrix
     logging.info(docs.shape)
     docX = pd.SparseDataFrame([pd.SparseSeries(docs[i].toarray().ravel()) for i in np.arange(docs.shape[0])],\
-    			index =ids).sort_index()
+                index =ids).sort_index()
     X =concat([numX.sort_index(), docX], axis =1)
     # X = numX.sort_index()
     y = y.sort_index()
    
     logging.info(X.shape)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=102)
     logging.info("Modeling of logistic regression...")
     lr_cm, lr_train_accuracy, lr_test_accuracy = generate_LR(X_train, X_test, y_train, y_test) #logistic regression
-    logging.info("Modeling of random forest...")
-    rf_cm, rf_train_accuracy, rf_test_accuracy = generate_RF(X_train, X_test, y_train, y_test) # #random forest
-
-    # print lr_accuracy, rf_accuracy, lr_cm, rf_cm
     logging.info("Accuracy of Logistic Regression\n train: %.4f, test: %.4f\n" % (lr_train_accuracy, lr_test_accuracy))
     logging.info('\n%s' % str(lr_cm))
-
+    
+    logging.info("Modeling of random forest...")
+    rf_cm, rf_train_accuracy, rf_test_accuracy = generate_RF(X_train, X_test, y_train, y_test) # #random forest
     logging.info("Accuracy of Random Forest\n  train: %.4f, test: %.4f\n" % (rf_train_accuracy, rf_test_accuracy))
     logging.info('\n%s' % str(rf_cm))
