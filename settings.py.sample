@@ -4,6 +4,6 @@
 # fill me
 DIR_8K      = '.'   # ex: F:/finance/8K.tar/8K-gz
 DIR_PRICE   = '.'
-
+DIR_SNP     = '.'
 DATA_DIR    = './data'
 LOG_DIR     = './logs'
