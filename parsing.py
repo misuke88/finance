@@ -4,6 +4,7 @@ import gzip
 import re
 import time
 import datetime
+import pandas as pd
 
 import nltk
 from dateutil.relativedelta import relativedelta
@@ -21,7 +22,7 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
     def get_id_doc_price(doc, error_filename):
         total = []
         lines = filter(None, doc.split('\n'))
-        id_ = lines[0].split('/')[-1].split('.')[0]
+        id_ = next(lines).split('/')[-1].split('.')[0]
         doc = ' '.join([line for line in lines\
                 if not (any(line.startswith(k) for k in KEYS) or line=='</DOCUMENT>')])
         price, week_move, month_move, quater_move, year_move = get_close_price_from_price_history(company_code, id_, error_filename)
@@ -91,7 +92,7 @@ def get_id_docs_from_gz(company_code, error_filename, error_filename_total_index
         return price
 
     with gzip.open('%s/%s.gz' % (DIR_8K, company_code)) as f:
-        docs = filter(None, f.read().split("<DOCUMENT>"))
+        docs = filter(None, f.read().decode('utf-8').split("<DOCUMENT>"))
 
     return [get_id_doc_price(d, error_filename) for d in docs]
 
