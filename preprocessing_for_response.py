@@ -32,35 +32,39 @@ def split_X_Y_dataset(data, error_filename_ratio):
     dataX['text'] = np.asarray(data['text'])
 
     dataX = dataX.drop(dataX.index[len(dataX)-1])
-    dataY = change_price_against_previous_day(data, error_filename_ratio)
+    dataY = change_price_of_number_of_days(data, error_filename_ratio)
 
     return dataX, dataY
 
 
-def change_price_against_previous_day(data, error_filename_ratio):
+def change_price_of_number_of_days(data, error_filename_ratio):
+## compute price change between n-1's closed price and n+7's closed price
+## n: news event
 
     columns = TOTAL_INDEX
     idxs =[]
+    ndays = 7
     error = 0
     criteria = 0.01
     prices = data['closePrice']
     ids = data['id']
-    change_price = pd.DataFrame(index =ids[range(len(ids)-1)], columns=columns)
+    tmp_ids = ids[1:len(ids)-ndays-1]
+    change_price = pd.DataFrame(index =tmp_ids, columns=columns)
 
     for INDEX in range(len(TOTAL_INDEX)-1):
         tmp_change =[]
         total = data[TOTAL_INDEX[INDEX]]
-        print INDEX
-        for i in range(len(prices)-1):
+        print (INDEX)
+        for i in range(1, len(prices)-ndays-1):
             # the price of previous day = null  then logging error
-            if prices[i+1] == 0 or total[i+1] == 0:
+            if prices[i+ndays] == 0 or total[i+ndays] == 0:
                 with open(error_filename_ratio, 'a') as ef: # log that document
-                    ef.write('%s\t%s\n' % (TOTAL_INDEX[INDEX], ids[i+1]))
+                    ef.write('%s\t%s\n' % (TOTAL_INDEX[INDEX], ids[i]))
                 tmp_change.append('ERROR')
                 error += 1
             else:
-                ratio = (prices[i+1]-prices[i])/prices[i+1]
-                total_ratio = (total[i+1]-total[i])/total[i+1]
+                ratio = (prices[i+ndays]-prices[i-1])/prices[i+ndays]
+                total_ratio = (total[i+ndays]-total[i-1])/total[i+ndays]
                 if ratio-total_ratio >= criteria:
                     tmp_change.append('UP')
                 elif ratio-total_ratio <= -criteria:
@@ -68,9 +72,9 @@ def change_price_against_previous_day(data, error_filename_ratio):
                 else:
                     tmp_change.append('STAY')
         change_price[TOTAL_INDEX[INDEX]] = np.asarray(tmp_change)
-    change_price[TOTAL_INDEX[INDEX+1]] = np.asarray(data[TOTAL_INDEX[INDEX+1]][range(len(data)-1)])
+    change_price[TOTAL_INDEX[INDEX+1]] = np.asarray(data[TOTAL_INDEX[INDEX+1]][1:len(data)-ndays-1])
 
-    print 'The %d days have null prices.' % error
+    print ('The %d days have null prices.' % error)
     return change_price
 
 
@@ -80,9 +84,9 @@ def write_table(data, filename):
 
 if __name__ == '__main__':
 
-    filename = '%s/stock.txt' % DATA_DIR
-    filename_X = '%s/stock_X.txt' % DATA_DIR
-    filename_Y = '%s/stock_Y.txt' % DATA_DIR
+    filename = '%s/stock_4company.txt' % DATA_DIR
+    filename_X = '%s/stock_4company_X_7days.txt' % DATA_DIR
+    filename_Y = '%s/stock_4company_Y_7days.txt' % DATA_DIR
     error_filename_ratio = '%s/errorfilename_ratio.txt' % DATA_DIR
 
     open(error_filename_ratio, 'w').close()
