@@ -8,7 +8,7 @@ import datetime
 import nltk
 from dateutil.relativedelta import relativedelta
 
-from settings import DATA_DIR, DIR_8K, DIR_PRICE
+from settings import DATA_DIR, DIR_8K, DIR_PRICE, DIR_SNP
 import utils
 
 from utils import checkdir, file_read, re_sub, get_version, get_datetime
@@ -122,10 +122,34 @@ def append_id_docs_to_file(id_docs_price, filename):
                     (id_, doc, float(price), week, month, quater, year,\
                      float(dow), float(snp), float(nas), float(vol)))
 
+def get_company_list(sector):
+
+    def openfiles(filename):
+
+        data = pd.read_csv(filename, sep='\t', header =None)
+        data.columns = ['company', 'abb', 'sector']
+        return data
+
+    def stats(num_sectors):
+        
+        stat = dict()
+        for i in num_sectors:
+            stat[i] = len(companys[companys['sector']==i]['sector'])
+            # print(i, stat[i])
+        return stats
+
+    filename = '%s/snp1500_20120928.txt' % DIR_SNP
+    companys = openfiles(filename)
+    num_sectors = set(companys['sector'])
+    finance_list = companys[companys['sector']=='Financials']['abb']
+ 
+    return finance_list
+
+
 if __name__ == '__main__':
 
     # company_codes = 'C WFC GS JPM BAC USB AXP SPG AIG MET'.split()
-    company_codes = 'C WFC GS JPM BAC'.split()
+    company_codes = get_company_list('Financials')
     filename = '%s/stock.txt' % DATA_DIR
     error_filename = '%s/errorfilename.txt' %DATA_DIR
     error_filename_total_index = '%s/errorfilename_total_index.txt' %DATA_DIR
